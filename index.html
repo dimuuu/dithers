@@ -3,195 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dither Lab</title>
-<style>
-  :root {
-    --paper: #f4f4f1;
-    --ink: #141414;
-    --ink-soft: #5a5a55;
-    --line: #c9c9c2;
-    --accent: #2b3cf0;
-    --accent-ink: #ffffff;
-    --preview-bg: #dddad2;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #131312;
-      --ink: #ececea;
-      --ink-soft: #98988f;
-      --line: #333331;
-      --accent: #5866ff;
-      --accent-ink: #ffffff;
-      --preview-bg: #0c0c0b;
-    }
-  }
-  :root[data-theme="light"] {
-    --paper: #f4f4f1;
-    --ink: #141414;
-    --ink-soft: #5a5a55;
-    --line: #c9c9c2;
-    --accent: #2b3cf0;
-    --accent-ink: #ffffff;
-    --preview-bg: #dddad2;
-  }
-  :root[data-theme="dark"] {
-    --paper: #131312;
-    --ink: #ececea;
-    --ink-soft: #98988f;
-    --line: #333331;
-    --accent: #5866ff;
-    --accent-ink: #ffffff;
-    --preview-bg: #0c0c0b;
-  }
-
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--line);
-  }
-  header h1 {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin: 0;
-  }
-  header .stat {
-    color: var(--ink-soft);
-    font-variant-numeric: tabular-nums;
-  }
-  header .spacer { flex: 1; }
-
-  main {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--preview-bg);
-    overflow: hidden;
-    padding: 24px;
-    min-height: 0;
-  }
-  #preview {
-    max-width: 100%;
-    max-height: 100%;
-    image-rendering: pixelated;
-    box-shadow: 0 2px 24px rgba(0,0,0,0.35);
-    background: #fff;
-  }
-
-  footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-top: 1px solid var(--line);
-  }
-
-  .sizes {
-    display: flex;
-    flex-wrap: wrap;
-    border: 1px solid var(--ink);
-  }
-  .sizes button {
-    border: none;
-    border-right: 1px solid var(--ink);
-    background: var(--paper);
-    color: var(--ink);
-    font: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 9px 12px;
-    cursor: pointer;
-  }
-  .sizes button:last-child { border-right: none; }
-  .sizes button[aria-pressed="true"] {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .sizes button:hover:not([aria-pressed="true"]) { background: var(--line); }
-
-  .action {
-    font: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    border: 1px solid var(--ink);
-    background: var(--paper);
-    color: var(--ink);
-    padding: 9px 14px;
-    cursor: pointer;
-    border-radius: 0;
-  }
-  .action:hover { background: var(--ink); color: var(--paper); }
-  .action.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-ink);
-  }
-  .action.primary:hover { filter: brightness(1.12); }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  footer .spacer { flex: 1; }
-  footer .seed {
-    color: var(--ink-soft);
-    font-variant-numeric: tabular-nums;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    button { transition: background 120ms ease, color 120ms ease; }
-  }
-</style>
-
+<title>Dithers</title>
 </head>
 <body>
-<header>
-  <h1>Dither Lab</h1>
-  <span class="stat" id="dims"></span>
-  <span class="spacer"></span>
-  <span class="stat" id="perf"></span>
-</header>
-
-<main>
-  <canvas id="preview"></canvas>
-</main>
-
-<footer>
-  <div class="sizes" role="group" aria-label="Size">
-    <button data-size="1179x2556" aria-pressed="false">iPhone</button>
-    <button data-size="2560x1440" aria-pressed="true">Desktop</button>
-    <button data-size="1500x500" aria-pressed="false">Twitter</button>
-    <button data-size="1584x396" aria-pressed="false">LinkedIn</button>
-  </div>
-  <button class="action" id="randomize">Randomize</button>
-  <button class="action primary" id="download">Download PNG</button>
-  <span class="spacer"></span>
-  <span class="seed" id="seedLabel"></span>
-</footer>
-
+<p>
+  <button data-size="1179x2556">iPhone</button>
+  <button data-size="2560x1440">Desktop</button>
+  <button data-size="1500x500">Twitter</button>
+  <button data-size="1584x396">LinkedIn</button>
+  <button id="randomize">Randomize</button>
+  <button id="download">Download PNG</button>
+</p>
+<canvas id="preview" style="max-width: 100%; height: auto;"></canvas>
 <script>
 (function () {
   "use strict";
@@ -265,15 +88,10 @@
             noise2(x * 4.7, y * 4.7, s + 202) * 0.12);
   }
 
-  // ---------- DOM ----------
   const canvas = document.getElementById("preview");
-  const dims = document.getElementById("dims");
-  const perf = document.getElementById("perf");
-  const seedLabel = document.getElementById("seedLabel");
 
   // ---------- render ----------
   function render() {
-    const t0 = performance.now();
     const W = size.w, H = size.h;
 
     // global design scale relative to desktop
@@ -369,23 +187,16 @@
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(smallCanvas, 0, 0, W, H);
-
-    dims.textContent = W + "×" + H + " px · dot " + ps + "px";
-    perf.textContent = "render " + (performance.now() - t0).toFixed(0) + " ms";
-    seedLabel.textContent = "seed: " + seed;
   }
 
   // ---------- wiring ----------
-  document.querySelector(".sizes").addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-size]");
-    if (!btn) return;
-    for (const b of document.querySelectorAll(".sizes button")) {
-      b.setAttribute("aria-pressed", String(b === btn));
-    }
-    const [w, h] = btn.dataset.size.split("x").map(Number);
-    size = { w, h };
-    render();
-  });
+  for (const btn of document.querySelectorAll("button[data-size]")) {
+    btn.addEventListener("click", () => {
+      const [w, h] = btn.dataset.size.split("x").map(Number);
+      size = { w, h };
+      render();
+    });
+  }
 
   document.getElementById("randomize").addEventListener("click", () => {
     seed = Math.random().toString(36).slice(2, 8);
