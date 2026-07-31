@@ -1,0 +1,400 @@
+<title>Dither Lab</title>
+<style>
+  :root {
+    --paper: #f4f4f1;
+    --ink: #141414;
+    --ink-soft: #5a5a55;
+    --line: #c9c9c2;
+    --accent: #2b3cf0;
+    --accent-ink: #ffffff;
+    --preview-bg: #dddad2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #131312;
+      --ink: #ececea;
+      --ink-soft: #98988f;
+      --line: #333331;
+      --accent: #5866ff;
+      --accent-ink: #ffffff;
+      --preview-bg: #0c0c0b;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f4f4f1;
+    --ink: #141414;
+    --ink-soft: #5a5a55;
+    --line: #c9c9c2;
+    --accent: #2b3cf0;
+    --accent-ink: #ffffff;
+    --preview-bg: #dddad2;
+  }
+  :root[data-theme="dark"] {
+    --paper: #131312;
+    --ink: #ececea;
+    --ink-soft: #98988f;
+    --line: #333331;
+    --accent: #5866ff;
+    --accent-ink: #ffffff;
+    --preview-bg: #0c0c0b;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  header .stat {
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  header .spacer { flex: 1; }
+
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--preview-bg);
+    overflow: hidden;
+    padding: 24px;
+    min-height: 0;
+  }
+  #preview {
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.35);
+    background: #fff;
+  }
+
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .sizes {
+    display: flex;
+    flex-wrap: wrap;
+    border: 1px solid var(--ink);
+  }
+  .sizes button {
+    border: none;
+    border-right: 1px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+  .sizes button:last-child { border-right: none; }
+  .sizes button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .sizes button:hover:not([aria-pressed="true"]) { background: var(--line); }
+
+  .action {
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    padding: 9px 14px;
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .action:hover { background: var(--ink); color: var(--paper); }
+  .action.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .action.primary:hover { filter: brightness(1.12); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  footer .spacer { flex: 1; }
+  footer .seed {
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    button { transition: background 120ms ease, color 120ms ease; }
+  }
+</style>
+
+<header>
+  <h1>Dither Lab</h1>
+  <span class="stat" id="dims"></span>
+  <span class="spacer"></span>
+  <span class="stat" id="perf"></span>
+</header>
+
+<main>
+  <canvas id="preview"></canvas>
+</main>
+
+<footer>
+  <div class="sizes" role="group" aria-label="Size">
+    <button data-size="1179x2556" aria-pressed="false">iPhone</button>
+    <button data-size="2560x1440" aria-pressed="true">Desktop</button>
+    <button data-size="1500x500" aria-pressed="false">Twitter</button>
+    <button data-size="1584x396" aria-pressed="false">LinkedIn</button>
+  </div>
+  <button class="action" id="randomize">Randomize</button>
+  <button class="action primary" id="download">Download PNG</button>
+  <span class="spacer"></span>
+  <span class="seed" id="seedLabel"></span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // Baked look — locked configuration, calibrated on desktop 2560×1440.
+  //
+  // Every other format renders the same design scaled: a global scale factor
+  // s = longest side / desktop longest side shrinks BOTH the field geometry
+  // and the dither pixel size together, so the effect keeps the same
+  // proportion to the canvas on every size. At desktop s = 1 and the output
+  // is pixel-identical to the approved reference config.
+  const REF_DIM = 1440;                 // output px per field unit at s = 1
+  const REF_LONG = 2560;                // desktop reference longest side
+  const BAKED = {
+    blobs: 10,
+    blobSize: 0.55,
+    gradMix: 0.75,
+    warp: 0.5,
+    warpScale: 1.25,
+    contrast: 15.5,
+    bias: -0.06,
+    invert: false,
+    pixelSize: 8                        // dither dot size in output px at s = 1
+  };
+
+  let seed = Math.random().toString(36).slice(2, 8);
+  let size = { w: 2560, h: 1440 };
+
+  // ---------- seeded PRNG ----------
+  function xmur3(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function () {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return (h ^= h >>> 16) >>> 0;
+    };
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---------- value noise ----------
+  function latticeHash(ix, iy, s) {
+    let h = Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 2246822519);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  function smooth(t) { return t * t * (3 - 2 * t); }
+  function noise2(x, y, s) {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    const fx = x - ix, fy = y - iy;
+    const a = latticeHash(ix, iy, s);
+    const b = latticeHash(ix + 1, iy, s);
+    const c = latticeHash(ix, iy + 1, s);
+    const d = latticeHash(ix + 1, iy + 1, s);
+    const u = smooth(fx), v = smooth(fy);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+  function fbm(x, y, s) {
+    return (noise2(x, y, s) * 0.6 +
+            noise2(x * 2.13, y * 2.13, s + 101) * 0.28 +
+            noise2(x * 4.7, y * 4.7, s + 202) * 0.12);
+  }
+
+  // ---------- DOM ----------
+  const canvas = document.getElementById("preview");
+  const dims = document.getElementById("dims");
+  const perf = document.getElementById("perf");
+  const seedLabel = document.getElementById("seedLabel");
+
+  // ---------- render ----------
+  function render() {
+    const t0 = performance.now();
+    const W = size.w, H = size.h;
+
+    // global design scale relative to desktop
+    const s = Math.max(W, H) / REF_LONG;
+    const ps = Math.max(1, Math.round(BAKED.pixelSize * s));
+    const iw = Math.max(1, Math.ceil(W / ps));
+    const ih = Math.max(1, Math.ceil(H / ps));
+    const unit = (REF_DIM * s) / ps; // internal px per field unit
+
+    const seedFn = xmur3(seed);
+    const seedInt = seedFn();
+    const rng = mulberry32(seedInt);
+    const noiseSeedX = (seedFn() % 100000) | 0;
+    const noiseSeedY = (seedFn() % 100000) | 0;
+
+    const spanX = iw / unit, spanY = ih / unit;
+    const blobs = [];
+    for (let i = 0; i < BAKED.blobs; i++) {
+      blobs.push({
+        x: (rng() * 1.4 - 0.2) * spanX,
+        y: (rng() * 1.4 - 0.2) * spanY,
+        r: (0.15 + rng() * 0.85) * BAKED.blobSize,
+        v: rng() * 2 - 1
+      });
+    }
+    const gradAngle = rng() * Math.PI * 2;
+    const gx = Math.cos(gradAngle), gy = Math.sin(gradAngle);
+
+    // field
+    const field = new Float32Array(iw * ih);
+    let fMin = Infinity, fMax = -Infinity;
+    const wf = BAKED.warpScale, wAmt = BAKED.warp;
+    for (let py = 0; py < ih; py++) {
+      const y0 = py / unit;
+      for (let px = 0; px < iw; px++) {
+        const x0 = px / unit;
+        const x = x0 + (fbm(x0 * wf, y0 * wf, noiseSeedX) - 0.5) * wAmt;
+        const y = y0 + (fbm(x0 * wf + 37.7, y0 * wf + 11.3, noiseSeedY) - 0.5) * wAmt;
+        let f = 0;
+        for (let b = 0; b < blobs.length; b++) {
+          const bl = blobs[b];
+          const dx = x - bl.x, dy = y - bl.y;
+          f += bl.v * Math.exp(-(dx * dx + dy * dy) / (bl.r * bl.r));
+        }
+        f += (gx * x + gy * y) * BAKED.gradMix * 2;
+        const idx = py * iw + px;
+        field[idx] = f;
+        if (f < fMin) fMin = f;
+        if (f > fMax) fMax = f;
+      }
+    }
+
+    // tone map: normalize + sigmoid contrast
+    const range = fMax - fMin || 1;
+    for (let i = 0; i < field.length; i++) {
+      let v = (field[i] - fMin) / range;
+      v = 1 / (1 + Math.exp(-BAKED.contrast * (v - 0.5 - BAKED.bias)));
+      field[i] = BAKED.invert ? 1 - v : v;
+    }
+
+    // Floyd–Steinberg dither to 1-bit
+    const bits = new Uint8Array(iw * ih);
+    for (let y = 0; y < ih; y++) {
+      for (let x = 0; x < iw; x++) {
+        const i = y * iw + x;
+        const old = field[i];
+        const nw = old > 0.5 ? 1 : 0;
+        bits[i] = nw;
+        const err = old - nw;
+        if (x + 1 < iw) field[i + 1] += err * 7 / 16;
+        if (y + 1 < ih) {
+          if (x > 0) field[i + iw - 1] += err * 3 / 16;
+          field[i + iw] += err * 5 / 16;
+          if (x + 1 < iw) field[i + iw + 1] += err * 1 / 16;
+        }
+      }
+    }
+
+    // paint + nearest-neighbor upscale
+    const smallCanvas = document.createElement("canvas");
+    smallCanvas.width = iw; smallCanvas.height = ih;
+    const sctx = smallCanvas.getContext("2d");
+    const img = sctx.createImageData(iw, ih);
+    for (let i = 0; i < bits.length; i++) {
+      const lum = bits[i] ? 255 : 0;
+      const o = i * 4;
+      img.data[o] = lum; img.data[o + 1] = lum; img.data[o + 2] = lum; img.data[o + 3] = 255;
+    }
+    sctx.putImageData(img, 0, 0);
+
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(smallCanvas, 0, 0, W, H);
+
+    dims.textContent = W + "×" + H + " px · dot " + ps + "px";
+    perf.textContent = "render " + (performance.now() - t0).toFixed(0) + " ms";
+    seedLabel.textContent = "seed: " + seed;
+  }
+
+  // ---------- wiring ----------
+  document.querySelector(".sizes").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-size]");
+    if (!btn) return;
+    for (const b of document.querySelectorAll(".sizes button")) {
+      b.setAttribute("aria-pressed", String(b === btn));
+    }
+    const [w, h] = btn.dataset.size.split("x").map(Number);
+    size = { w, h };
+    render();
+  });
+
+  document.getElementById("randomize").addEventListener("click", () => {
+    seed = Math.random().toString(36).slice(2, 8);
+    render();
+  });
+
+  document.getElementById("download").addEventListener("click", () => {
+    canvas.toBlob((blob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "dither-" + seed + "-" + size.w + "x" + size.h + ".png";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }, "image/png");
+  });
+
+  render();
+})();
+</script>
