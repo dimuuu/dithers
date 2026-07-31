@@ -7,10 +7,12 @@
 </head>
 <body>
 <p>
-  <button data-size="1179x2556">iPhone</button>
-  <button data-size="2560x1440">Desktop</button>
-  <button data-size="1500x500">Twitter</button>
-  <button data-size="1584x396">LinkedIn</button>
+  <select id="preset">
+    <option value="1179x2556">iPhone</option>
+    <option value="2560x1440" selected>Desktop</option>
+    <option value="1500x500">Twitter</option>
+    <option value="1584x396">LinkedIn</option>
+  </select>
   <button id="randomize">Randomize</button>
   <button id="download">Download PNG</button>
 </p>
@@ -190,13 +192,11 @@
   }
 
   // ---------- wiring ----------
-  for (const btn of document.querySelectorAll("button[data-size]")) {
-    btn.addEventListener("click", () => {
-      const [w, h] = btn.dataset.size.split("x").map(Number);
-      size = { w, h };
-      render();
-    });
-  }
+  document.getElementById("preset").addEventListener("change", (e) => {
+    const [w, h] = e.target.value.split("x").map(Number);
+    size = { w, h };
+    render();
+  });
 
   document.getElementById("randomize").addEventListener("click", () => {
     seed = Math.random().toString(36).slice(2, 8);
