@@ -4,9 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dithers</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  #controls {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1;
+    margin: 0;
+  }
+
+  #preview {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 32px);
+    border: 1px solid;
+  }
+</style>
 </head>
 <body>
-<p>
+<p id="controls">
   <select id="preset">
     <option value="1179x2556">iPhone</option>
     <option value="2560x1440" selected>Desktop</option>
@@ -16,7 +51,7 @@
   <button id="randomize">Randomize</button>
   <button id="download">Download</button>
 </p>
-<canvas id="preview" style="max-width: 100%; height: auto; border: 1px solid;"></canvas>
+<canvas id="preview"></canvas>
 <script>
 (function () {
   "use strict";
