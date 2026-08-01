@@ -73,6 +73,7 @@
   <select id="preset">
     <option value="1179x2556">iPhone</option>
     <option value="2560x1440" selected>Desktop</option>
+    <option value="1200x630" data-pixel-size="1">OG image</option>
     <option value="1500x500">Twitter</option>
     <option value="1584x396">LinkedIn</option>
   </select>
@@ -108,7 +109,7 @@
   };
 
   let seed = Math.random().toString(36).slice(2, 8);
-  let size = { w: 2560, h: 1440 };
+  let size = { w: 2560, h: 1440, pixelSize: null };
 
   // ---------- seeded PRNG ----------
   function xmur3(str) {
@@ -163,7 +164,9 @@
 
     // global design scale relative to desktop
     const s = Math.max(W, H) / REF_LONG;
-    const ps = Math.max(1, Math.round(BAKED.pixelSize * s));
+    // The OG preset forces full-resolution diffusion to match the shipped
+    // social artwork's fine mesh; other formats keep proportional cells.
+    const ps = size.pixelSize ?? Math.max(1, Math.round(BAKED.pixelSize * s));
     const iw = Math.max(1, Math.ceil(W / ps));
     const ih = Math.max(1, Math.ceil(H / ps));
     const unit = (REF_DIM * s) / ps; // internal px per field unit
@@ -259,7 +262,8 @@
   // ---------- wiring ----------
   document.getElementById("preset").addEventListener("change", (e) => {
     const [w, h] = e.target.value.split("x").map(Number);
-    size = { w, h };
+    const pixelSize = Number(e.target.selectedOptions[0].dataset.pixelSize) || null;
+    size = { w, h, pixelSize };
     render();
   });
 
